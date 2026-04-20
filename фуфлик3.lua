@@ -1,0 +1,120 @@
+local player = game.Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
+
+local gui = Instance.new("ScreenGui", CoreGui)
+gui.Name = "PwukikScript"
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 220, 0, 140)
+main.Position = UDim2.new(0, 20, 0, 100)
+main.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "PwukikScript"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+
+local btn = Instance.new("TextButton", main)
+btn.Size = UDim2.new(1, -20, 0, 40)
+btn.Position = UDim2.new(0, 10, 0, 40)
+btn.BackgroundColor3 = Color3.fromRGB(220, 0, 0)
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.Text = "Start Quest Loop"
+btn.Font = Enum.Font.GothamSemibold
+btn.TextSize = 14
+
+local status = Instance.new("TextLabel", main)
+status.Size = UDim2.new(1, -20, 0, 20)
+status.Position = UDim2.new(0, 10, 0, 90)
+status.BackgroundTransparency = 1
+status.TextColor3 = Color3.fromRGB(255, 255, 255)
+status.Text = "Idle"
+status.Font = Enum.Font.Gotham
+status.TextSize = 12
+
+-- Функция безопасного телепорта
+local function teleport(cf)
+    if not player or not player.Character then
+        return false
+    end
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        root.CFrame = cf
+        return true
+    end
+    return false
+end
+
+-- Функция поиска NPC с ограничением попыток
+local function findNpc(name)
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") and v.Name == name and v:FindFirstChild("Humanoid") and v:FindFirstChild("Head") then
+            return v
+        end
+    end
+    return nil
+end
+
+-- Выполнение квеста
+local function doQuest()
+    status.Text = "Searching Sticker Seeker..."
+    local npc = findNpc("Sticker Seeker")
+    if npc then
+        local head = npc.Head
+        teleport(head.CFrame * CFrame.new(0, 0, -5))
+        task.wait(1)
+        fireproximityprompt(head, 0)
+        task.wait(1)
+        status.Text = "Quest interaction done"
+    else
+        status.Text = "Sticker Seeker not found"
+    end
+end
+
+-- Переход в Hive Hub
+local function goToHiveHub()
+    status.Text = "Going to Hive Hub..."
+    local portal = Workspace:FindFirstChild("Portal_HiveHub", true)
+    if portal and portal:IsA("BasePart") then
+        teleport(portal.CFrame * CFrame.new(0, 5, 0))
+        task.wait(2)
+        local touchPart = portal:FindFirstChildWhichIsA("TouchTransmitter")
+        if touchPart and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            firetouchinterest(player.Character.HumanoidRootPart, portal, 0)
+            firetouchinterest(player.Character.HumanoidRootPart, portal, 1)
+        end
+    else
+        teleport(CFrame.new(-1500, 50, 1000))
+    end
+    task.wait(3)
+    status.Text = "Arrived at Hive Hub"
+end
+
+-- Основной безопасный цикл с увеличенными паузами
+btn.MouseButton1Click:Connect(function()
+    status.Text = "Starting loop..."
+    task.spawn(function()
+        while true do
+            -- Проверка существования игрока
+            if not player or not player.Character then
+                status.Text = "Waiting for character..."
+                task.wait(2)
+                continue
+            end
+            
+            status.Text = "Checking quest..."
+            pcall(goToHiveHub)
+            task.wait(2)        -- дополнительная пауза для стабильности
+            
+            pcall(doQuest)
+            task.wait(5)        -- основная пауза между циклами
+        end
+    end)
+end)
